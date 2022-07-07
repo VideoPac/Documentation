@@ -21,11 +21,29 @@ page_order = {
 
 for dir, target in conversions.items():
     path = Path(f'{root_dir}{dir}')
-    subdirs = [str(subdir.name).upper() for subdir in path.iterdir() if subdir.is_dir()]
+    subdirs = sorted([str(subdir.name).upper() for subdir in path.iterdir() if subdir.is_dir()])
+    
+    target_path = Path(f"{target_dir}{target}")
+    if os.path.exists(target_path):
+        shutil.rmtree(target_path)
+    target_path.mkdir(parents=True, exist_ok=True)
     
     i = 11
     
-    if dir == "cfd":
+    if dir != "cfd":
+        with open(target_path / "00.json", "w", encoding="utf-8") as json:
+            content_dict = {f"{count+11:02}": "" for count in range(len(subdirs))}
+            json.write('''{
+  "type" : "landing",
+  "heading" : "Market Hours",
+  "subHeading" : "",
+  "content" : "<p>Market hours of different exchanges.</p>",
+  "alsoLinks" : [],
+  "featureShortDescription": ''')
+            json.write(str(content_dict).replace("'", '"'))
+            json.write("}")
+    
+    else:
         j = 1
 
         ref_pages = sorted((path / "generic").glob('*.html'), key=lambda x: page_order[x.name])
@@ -63,8 +81,6 @@ for dir, target in conversions.items():
         
         market_dir = path / subdir.lower() if dir != "cfd" else path / subdir.upper()
         output_dir = Path(f'{target_dir}{target}/{i:02} {subdir}')
-        if os.path.exists(output_dir):
-            shutil.rmtree(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         
         j = 1
@@ -89,13 +105,13 @@ for dir, target in conversions.items():
 """)
                 html_file.write(codes)
             
-        assets_subdirs = [str(subdir.name).upper() for subdir in market_dir.iterdir() if subdir.is_dir() and subdir.name != "generic"]
+        assets_subdirs = sorted([str(subdir2.name).upper() for subdir2 in market_dir.iterdir() if subdir2.is_dir() and subdir2.name != "generic"])
         
         k = 11
         
         for asset in assets_subdirs:
             contract_name = asset.replace("__", " ").replace("_", " ").upper()
-            raw_asset_dir = market_dir / asset.lower()
+            raw_asset_dir = market_dir / asset.upper()
             asset_dir = output_dir/ f'{k:02} {contract_name}'
             asset_dir.mkdir(parents=True, exist_ok=True)
         
